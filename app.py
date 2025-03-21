@@ -1,28 +1,26 @@
-#!/usr/bin/env python3
-import os
+from aws_cdk import App
+from project_stack.s3_stack import S3Stack
+from project_stack.project_stack import StorageStack
+from project_stack.lambda_stack import LambdaStack
+from project_stack.trigger_stack import TriggerStack
 
-import aws_cdk as cdk
+app = App()
 
-from 6620_ass3.6620_ass3_stack import 6620Ass3Stack
+s3_stack = S3Stack(app, "S3Stack")
 
+storage_stack = StorageStack(app, "StorageStack",
+    bucket=s3_stack.bucket
+)
 
-app = cdk.App()
-6620Ass3Stack(app, "6620Ass3Stack",
-    # If you don't specify 'env', this stack will be environment-agnostic.
-    # Account/Region-dependent features and context lookups will not work,
-    # but a single synthesized template can be deployed anywhere.
+lambda_stack = LambdaStack(app, "LambdaStack",
+    bucket=s3_stack.bucket,
+    table=storage_stack.table
+)
 
-    # Uncomment the next line to specialize this stack for the AWS Account
-    # and Region that are implied by the current CLI configuration.
-
-    #env=cdk.Environment(account=os.getenv('CDK_DEFAULT_ACCOUNT'), region=os.getenv('CDK_DEFAULT_REGION')),
-
-    # Uncomment the next line if you know exactly what Account and Region you
-    # want to deploy the stack to. */
-
-    #env=cdk.Environment(account='123456789012', region='us-east-1'),
-
-    # For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html
-    )
+# ✅ Pass just the bucket name
+trigger_stack = TriggerStack(app, "TriggerStack",
+    bucket_name=s3_stack.bucket.bucket_name,
+    lambda_fn=lambda_stack.size_tracking_lambda
+)
 
 app.synth()
